@@ -304,5 +304,15 @@ class Magister {
 		}
 	}
 
+	function getAanmeldingen($geenToekomstige = true, $peilDatum = false) {
+		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false){
+			return false;
+		}else{
+			$pijlDatum = $pijlDatum == false ? date("Y-m-d") : $pijlDatum;
+			$data = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen?geenToekomstige='.$geenToekomstige.'&peildatum='.$pijlDatum));
+			return $data;
+		}
+	}
+
 }
 ?>
