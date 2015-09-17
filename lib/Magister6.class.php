@@ -272,7 +272,9 @@ class Magister {
 		}
 	}
 
-	function getGrades($vak = false, $actievePerioden = true, $alleenBerekendeKolommen = false, $alleenPTAKolommen = false){
+    	function getGrades($vak = false, $actievePerioden = true, $alleenBerekendeKolommen = false, $alleenPTAKolommen = false, $studyId = false){
+        	$this->studyId = ($studyId == false ? $this->studyId : $studyId);
+
 		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false || empty($this->studyId)){
 			return false;
 		}else{
