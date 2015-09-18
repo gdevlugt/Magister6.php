@@ -306,8 +306,8 @@ class Magister {
 		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false){
 			return false;
 		}else{
-			$pijlDatum = $pijlDatum == false ? date("Y-m-d") : $pijlDatum;
-			$data = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen?geenToekomstige='.$geenToekomstige.'&peildatum='.$pijlDatum));
+			$peilDatum = $peilDatum == false ? date("Y-m-d") : $peilDatum;
+			$data = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen?geenToekomstige='.$geenToekomstige.'&peildatum='.$peilDatum));
 			return $data;
 		}
 	}
