@@ -1,0 +1,23 @@
+{
+    "name": "gdevlugt/Magister6.php",
+    "type": "library",
+    "description": "Easy to use, flexible PHP library for the Magister 6 API.",
+    "keywords": ["magister 6", "magister", "school"],
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Thomas Konings",
+            "role": "Developer"
+        },
+        {
+            "name": "Geoffrey de Vlugt",
+            "email": "geoffrey@renaissance.nl",
+            "role": "Contributor"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "Magister6\\": "lib/Magister6"
+        }
+    }
+}

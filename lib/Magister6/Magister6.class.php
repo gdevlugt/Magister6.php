@@ -1,5 +1,7 @@
 <?php
 
+namespace Magister6;
+
 class Magister {
 
 	//Variables
