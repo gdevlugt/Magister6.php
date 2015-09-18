@@ -198,10 +198,10 @@ class Magister {
 			//get current study
 			$result = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen?geenToekomstige=true&peildatum='.date("Y-m-d")));
 
-			$now = new DateTime();
+			$now = new \DateTime();
 
 			foreach($result->Items as $item){
-				if(new DateTime($item->Einde) > $now){
+				if(new \DateTime($item->Einde) > $now){
 					$this->studyId = $item->Id;
 				}
 			}
