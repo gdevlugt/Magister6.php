@@ -6,7 +6,6 @@ class Magister {
 	public $url = '';			//Magister 6 url of school, found by selecting a school from $magister->findSchool('name')
 	public $user = '';			//Magister 6 username provided by user
 	public $pass = '';			//Magister 6 password provided by user
-	public $intSession = ''; 	//internal session ID, used for cookie files
 	public $cookieJar = '';		//Used to store file inside variable and destroy files to keep tmp directory empty
 	public $magisterId = '';	//Magister 6 username provided by API server
 	public $studyId = '';		//Current study the student is following, needed for things like grades
@@ -16,9 +15,9 @@ class Magister {
 	public $profile;
 
 	private function curlget($url){
-		$cookiefile = 'tmp/'.$this->intSession.'.txt';
-
-		touch($cookiefile);
+		$tmpfile = tmpfile();
+		$cookiefile = stream_get_meta_data($tmpfile)["uri"];
+		fclose($tmpfile);
 
 		if(!empty($this->cookieJar)){
 			file_put_contents($cookiefile, $this->cookieJar);
@@ -49,9 +48,9 @@ class Magister {
 	}
 
 	private function curlpost($url, $post = null){
-		$cookiefile = 'tmp/'.$this->intSession.'.txt';
-
-		touch($cookiefile);
+		$tmpfile = tmpfile();
+		$cookiefile = stream_get_meta_data($tmpfile)["uri"];
+		fclose($tmpfile);
 
 		if(!empty($this->cookieJar)){
 			file_put_contents($cookiefile, $this->cookieJar);
@@ -97,10 +96,6 @@ class Magister {
 		return true;
 	}
 
-	private function generateSession(){
-		return md5($_SERVER['REMOTE_ADDR'].round(microtime(true) * 1000).mt_rand(0,1000)); //generate unique session ID, md5 it to make it look pretty
-	}
-
 	private function boolToString($bool){
 		if($bool == true){
 			return 'true';
@@ -118,7 +113,6 @@ class Magister {
 		if($user !== false && $pass !== false){
 			self::setCredentials($user, $pass);
 		}
-		$this->intSession = self::generateSession();
 
 		if($autoLogin){
 			self::login();
