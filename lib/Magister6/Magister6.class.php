@@ -84,8 +84,8 @@ class Magister {
 		}
 
 		$header_size = curl_getinfo($ch, CURLINFO_HEADER_SIZE);
-		$header = substr($response, 0, $header_size);
-		$body = substr($response, $header_size);
+		$header = substr($result, 0, $header_size);
+		$body = substr($result, $header_size);
 
 		//var_dump($header);
 
