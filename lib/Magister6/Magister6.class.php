@@ -182,10 +182,12 @@ class Magister {
 			$accountUrl = $this->url.'api/account';
 			$account = json_decode(self::curlget($accountUrl));
 
-			if($account->Fouttype == "OngeldigeSessieStatus"){
-				throw new Exception('Magister6.class.php: Ongeldige Sessie, check credentials.');
-				break;
-			}
+			if(!empty($account->Fouttype)){
+				if($account->Fouttype == "OngeldigeSessieStatus"){
+					throw new Exception('Magister6.class.php: Ongeldige Sessie, check credentials.');
+					break;
+				}
+			}	
 
 			$this->magisterId = $account->Persoon->Id;
 
