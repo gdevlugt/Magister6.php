@@ -312,5 +312,15 @@ class Magister {
 		}
 	}
 
+	function getCijferPerioden() {
+		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false || empty($this->studyId)){
+			return false;
+		}else{
+			$data = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen/'.$this->studyId.'/cijfers/cijferperiodenvooraanmelding'));
+			return $data;
+	}
+	
+    }
+
 }
 ?>
