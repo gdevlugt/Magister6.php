@@ -15,6 +15,7 @@ class Magister {
 
 	//Request storage variables
 	public $profile;
+	public $group;
 
 	private function curlget($url){
 		$tmpfile = tmpfile();
@@ -137,6 +138,14 @@ class Magister {
 		}
 	}
 
+	function getGroupInfo(){
+		if(empty($this->group)){
+			return false;
+		}else{
+			return $this->group;
+		}
+	}
+
 	function findSchool($string){
 		if(empty($string)){
 			return false;
@@ -192,6 +201,7 @@ class Magister {
 			$this->magisterId = $account->Persoon->Id;
 
 			$this->profile = $account->Persoon;
+			$this->group = $account->Groep;
 
 			$this->isLoggedIn = true;
 
