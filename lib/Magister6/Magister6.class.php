@@ -10,17 +10,19 @@ class Magister {
 	public $pass = '';			//Magister 6 password provided by user
 	public $cookieJar = '';		//Used to store file inside variable and destroy files to keep tmp directory empty
 	public $magisterId = '';	//Magister 6 username provided by API server
+	public $magisterParentId = '';
+	public $stamnummer = '';
 	public $studyId = '';		//Current study the student is following, needed for things like grades
 	public $isLoggedIn = false; //Easy check if the user is logged in
+	public $isParent = false;
 
 	//Request storage variables
 	public $profile;
 	public $group;
 
 	private function curlget($url){
-		$tmpfile = tmpfile();
-		$cookiefile = stream_get_meta_data($tmpfile)["uri"];
-		fclose($tmpfile);
+		$cookiefile = tempnam(sys_get_temp_dir(), uniqid());
+		touch($cookiefile);
 
 		if(!empty($this->cookieJar)){
 			file_put_contents($cookiefile, $this->cookieJar);
@@ -51,9 +53,8 @@ class Magister {
 	}
 
 	private function curlpost($url, $post = null){
-		$tmpfile = tmpfile();
-		$cookiefile = stream_get_meta_data($tmpfile)["uri"];
-		fclose($tmpfile);
+		$cookiefile = tempnam(sys_get_temp_dir(), uniqid());
+		touch($cookiefile);
 
 		if(!empty($this->cookieJar)){
 			file_put_contents($cookiefile, $this->cookieJar);
@@ -109,12 +110,27 @@ class Magister {
 		}
 	}
 
-	function __construct($school = false, $user = false, $pass = false, $autoLogin = false){
+	private function isParent() {
+		$this->isParent = false;
+
+		for($g = 0; $g < count($this->group); $g++) {
+			if($this->group[$g]->Naam == 'Ouder') {
+				$this->isParent = true;
+			}
+		}
+
+		return $this->isParent;
+	}
+
+	function __construct($school = false, $user = false, $pass = false, $autoLogin = false, $stamnummer = false){
 		if($school !== false){
 			self::setSchool($school);
 		}
 		if($user !== false && $pass !== false){
 			self::setCredentials($user, $pass);
+		}
+		if($stamnummer !== false) {
+			self::setStamnummer($stamnummer);
 		}
 
 		if($autoLogin){
@@ -144,6 +160,18 @@ class Magister {
 		}else{
 			return $this->group;
 		}
+	}
+
+	function getPrivilegeAccessTypes($privilege_name) {
+		for($p = 0; $p < count($this->group[0]->Privileges); $p++) {
+			if($this->group[0]->Privileges[$p]->Naam == $privilege_name) {
+				return $this->group[0]->Privileges[$p]->AccessType;
+			}
+		}
+	}
+
+	function hasPrivilegeAccessType($privilege_name, $access_type) {
+		return in_array($access_type, $this->getPrivilegeAccessTypes($privilege_name));
 	}
 
 	function findSchool($string){
@@ -181,6 +209,15 @@ class Magister {
 		}
 	}
 
+	function setStamnummer($stamnummer){
+		if(empty($stamnummer)){
+			return false;
+		}else{
+			$this->stamnummer = $stamnummer;
+			return true;
+		}
+	}
+
 	function login(){
 		if(empty($this->user) || empty($this->pass) || empty($this->url)){
 			return false;
@@ -203,7 +240,22 @@ class Magister {
 			$this->profile = $account->Persoon;
 			$this->group = $account->Groep;
 
-			$this->isLoggedIn = true;
+ 			$this->isLoggedIn = true;
+
+			if($this->isParent() == true) {
+				// store magister ID of parent account;
+				$this->magisterParentId = $this->magisterId;
+
+				$result = $this->getChildren();
+
+				if($result->TotalCount > 0 && $this->stamnummer != null) {
+					foreach($result->Items as $child) {
+						if($child->Stamnummer == $this->stamnummer) {
+							$this->magisterId = $child->Id;		
+						}
+					}
+				} 
+			}
 
 			//get current study
 			$result = json_decode(self::curlget($this->url.'api/personen/'.$this->magisterId.'/aanmeldingen?geenToekomstige=true&peildatum='.date("Y-m-d")));
@@ -217,6 +269,14 @@ class Magister {
 			}
 
 			return true;
+		}
+	}
+
+	function getChildren(){
+		if(empty($this->magisterParentId) || empty($this->url) || $this->isLoggedIn == false){
+			return false;
+		}else{
+			return json_decode(self::curlget($this->url.'api/personen/'.$this->magisterParentId.'/kinderen'));
 		}
 	}
 
@@ -280,8 +340,8 @@ class Magister {
 		}
 	}
 
-    	function getGrades($vak = false, $actievePerioden = true, $alleenBerekendeKolommen = false, $alleenPTAKolommen = false, $studyId = false){
-        	$this->studyId = ($studyId == false ? $this->studyId : $studyId);
+	function getGrades($vak = false, $actievePerioden = true, $alleenBerekendeKolommen = false, $alleenPTAKolommen = false, $studyId = false){
+    	$this->studyId = ($studyId == false ? $this->studyId : $studyId);
 
 		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false || empty($this->studyId)){
 			return false;
