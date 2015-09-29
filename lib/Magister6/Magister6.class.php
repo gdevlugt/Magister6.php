@@ -16,11 +16,14 @@ class Magister {
 	public $isLoggedIn = false; //Easy check if the user is logged in
 	public $isParent = false;
 
+	public $apiVersion = '';
+	private $session_cookie_string = '';	// Magister API v1.24+ require session id set as as a cookie in login POSR request.
+
 	//Request storage variables
 	public $profile;
 	public $group;
 
-	private function curlget($url){
+	private function curlget($url, $return_headers = false){
 		$cookiefile = tempnam(sys_get_temp_dir(), uniqid());
 		touch($cookiefile);
 
@@ -32,6 +35,7 @@ class Magister {
 		if($referer){
 			$referer=$referer["scheme"]."://".$referer["host"];
 		}
+
 		$ch=curl_init();
 		curl_setopt($ch,CURLOPT_URL,$url);
 		curl_setopt($ch,CURLOPT_SSL_VERIFYPEER,FALSE);
@@ -42,8 +46,9 @@ class Magister {
 		curl_setopt($ch,CURLOPT_COOKIEFILE,$cookiefile);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 		curl_setopt($ch,CURLOPT_REFERER,$referer);
+		curl_setopt($ch,CURLOPT_HEADER,$return_headers);
+
 		$result=curl_exec($ch);
-		curl_close($ch);
 
 		$this->cookieJar = file_get_contents($cookiefile);
 
@@ -56,7 +61,7 @@ class Magister {
 		$cookiefile = tempnam(sys_get_temp_dir(), uniqid());
 		touch($cookiefile);
 
-		if(!empty($this->cookieJar)){
+ 		if(!empty($this->cookieJar)){
 			file_put_contents($cookiefile, $this->cookieJar);
 		}
 
@@ -78,6 +83,10 @@ class Magister {
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
 		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'charset=UTF-8'));
+
+		// Since Magister v1.24+, we need to set a cookie in the POST request.
+		curl_setopt($ch, CURLOPT_COOKIE, self::getSessionCookieString());
+
 		$result=curl_exec($ch);
 
 		if(curl_errno($ch))
@@ -89,8 +98,6 @@ class Magister {
 		$header = substr($result, 0, $header_size);
 		$body = substr($result, $header_size);
 
-		//var_dump($header);
-
 		curl_close($ch);
 
 		$this->cookieJar = file_get_contents($cookiefile);
@@ -98,6 +105,54 @@ class Magister {
 		unlink($cookiefile);
 
 		return true;
+	}
+
+
+	/**
+	 * Returns array of HTTP request headers.
+	 *
+	 * @param $response string HTTP response.
+	 * @return array Returns array of HTTP request headers.
+     */
+	private function get_request_header($response) {
+		$headers = [];
+
+		list($headers_raw, $content) = explode("\r\n\r\n",$response, 2);
+
+		foreach (explode("\r\n", $headers_raw) as $hdr) {
+			if (strpos($hdr, ':')) {
+				list($key, $value) = explode(":", $hdr, 2);
+				$headers[$key] = trim($value);
+			}
+		}
+
+		return $headers;
+	}
+
+
+	/**
+	 * Returns a Magister session ID cookie string.
+	 *
+	 * @return string Magister session ID cookie string.
+     */
+	private function getSessionCookieString() {
+		if (empty($this->session_cookie_string) && $this->apiVersion >= 24) {
+			// Before we can log in, we first need to get a session id.
+			// We can get it by performing a GET request.
+			$currentSessionUrl = $this->url.'api/sessies/huidige';
+
+			// Only get the headers of the request.
+			$raw_headers = self::curlget($currentSessionUrl, true);
+
+			// And process the raw headers into an associative array.
+			$headers = self::get_request_header($raw_headers);
+
+			// The session ID is stored in the header 'Set-Cookie'. We just
+			// need to return the 'Set-Cookie' header if it exists.
+			$this->session_cookie_string = isset($headers['Set-Cookie']) ? $headers['Set-Cookie'] : '';
+		}
+
+		return $this->session_cookie_string;
 	}
 
 	private function boolToString($bool){
@@ -126,12 +181,19 @@ class Magister {
 		if($school !== false){
 			self::setSchool($school);
 		}
+
 		if($user !== false && $pass !== false){
 			self::setCredentials($user, $pass);
 		}
+
 		if($stamnummer !== false) {
 			self::setStamnummer($stamnummer);
 		}
+
+		// Set API version. We are only interested in the minor version.
+		// So for '1.24.nnnn' we only are after '24'.
+		$magister_info = self::getMagisterInfo();
+		$this->apiVersion = substr($magister_info->ApiVersie, 2, 2);
 
 		if($autoLogin){
 			self::login();
@@ -222,7 +284,13 @@ class Magister {
 		if(empty($this->user) || empty($this->pass) || empty($this->url)){
 			return false;
 		}else{
-			$loginUrl = $this->url.'api/sessie';
+			if ($this->apiVersion < 24) {
+				$loginUrl = $this->url.'api/sessie';
+			}
+			else {
+				$loginUrl = $this->url.'api/sessies';
+			}
+
 			$result = self::curlpost($loginUrl, array('Gebruikersnaam' => $this->user, 'Wachtwoord' => $this->pass, "IngelogdBlijven" => true, "GebruikersnaamOnthouden" => true));
 
 			$accountUrl = $this->url.'api/account';
@@ -233,7 +301,7 @@ class Magister {
 					throw new Exception('Magister6.class.php: Ongeldige Sessie, check credentials.');
 					break;
 				}
-			}	
+			}
 
 			$this->magisterId = $account->Persoon->Id;
 
@@ -251,10 +319,10 @@ class Magister {
 				if($result->TotalCount > 0 && $this->stamnummer != null) {
 					foreach($result->Items as $child) {
 						if($child->Stamnummer == $this->stamnummer) {
-							$this->magisterId = $child->Id;		
+							$this->magisterId = $child->Id;
 						}
 					}
-				} 
+				}
 			}
 
 			//get current study
