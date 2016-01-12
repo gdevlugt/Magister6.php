@@ -468,5 +468,13 @@ class Magister {
 		}
 	}
 
+	function getProfileImage(){
+		if(empty($this->magisterId) || empty($this->url) || $this->isLoggedIn == false){
+			return false;
+		}else{
+			return self::curlget($this->url.'api/personen/'.$this->magisterId.'/foto?width=340&height=420');
+		}
+	}
+
 }
 ?>
