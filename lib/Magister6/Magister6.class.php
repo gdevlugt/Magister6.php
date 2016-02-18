@@ -330,16 +330,10 @@ class Magister {
 
 			$now = new \DateTime();
 
-			$last_seen_study_id = '';
 			foreach($result->Items as $item){
-				$last_seen_study_id = $item->Id;
 				if(new \DateTime($item->Einde) > $now){
 					$this->studyId = $item->Id;
 				}
-			}
-
-			if ($last_seen_study_id != '' and $this->studyId == '') {
-				$this->studyId = $last_seen_study_id;
 			}
 
 			return true;
