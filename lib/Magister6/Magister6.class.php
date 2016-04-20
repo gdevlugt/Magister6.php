@@ -136,7 +136,7 @@ class Magister {
 	 * @return string Magister session ID cookie string.
      */
 	private function getSessionCookieString() {
-		if (empty($this->session_cookie_string) && $this->apiVersion >= 24) {
+		if (empty($this->session_cookie_string) && ($this->apiVersion[0] == 2 || ($this->apiVersion[0] == 1 && $this->apiVersion[1] >= 24))) {
 			// Before we can log in, we first need to get a session id.
 			// We can get it by performing a GET request.
 			$currentSessionUrl = $this->url.'api/sessies/huidige';
@@ -190,10 +190,9 @@ class Magister {
 			self::setStamnummer($stamnummer);
 		}
 
-		// Set API version. We are only interested in the minor version.
-		// So for '1.24.nnnn' we only are after '24'.
+		// Set API version.
 		$magister_info = self::getMagisterInfo();
-		$this->apiVersion = substr($magister_info->ApiVersie, 2, 2);
+		$this->apiVersion = explode(".", $magister_info->ApiVersie);
 
 		if($autoLogin){
 			self::login();
@@ -284,7 +283,7 @@ class Magister {
 		if(empty($this->user) || empty($this->pass) || empty($this->url)){
 			return false;
 		}else{
-			if ($this->apiVersion < 24) {
+			if ($this->apiVersion[0] == 1 && $this->apiVersion[1] < 24) {
 				$loginUrl = $this->url.'api/sessie';
 			}
 			else {
