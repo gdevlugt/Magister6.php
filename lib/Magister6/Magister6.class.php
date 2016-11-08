@@ -298,7 +298,7 @@ class Magister {
 			if(!empty($account->Fouttype)){
 				if($account->Fouttype == "OngeldigeSessieStatus"){
 					throw new \Exception('Magister6.class.php: Ongeldige Sessie, check credentials.');
-					break;
+					exit();
 				}
 			}
 
