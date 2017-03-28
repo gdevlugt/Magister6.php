@@ -46,7 +46,8 @@ class Magister {
 		curl_setopt($ch,CURLOPT_COOKIEFILE,$cookiefile);
 		curl_setopt($ch,CURLOPT_RETURNTRANSFER,1);
 		curl_setopt($ch,CURLOPT_REFERER,$referer);
-		curl_setopt($ch,CURLOPT_HEADER,$return_headers);
+		curl_setopt($ch,CURLOPT_HEADER, $return_headers);
+		curl_setopt($ch,CURLOPT_HTTPHEADER, array('X-API-Client-ID: 12D8'));
 
 		$result=curl_exec($ch);
 
@@ -82,7 +83,8 @@ class Magister {
 		curl_setopt($ch, CURLOPT_HEADER, 1);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
 		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-		curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json', 'charset=UTF-8'));
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-API-Client-ID: 12D8', 'Content-Type: application/json', 'charset=UTF-8'));
+
 
 		// Since Magister v1.24+, we need to set a cookie in the POST request.
 		curl_setopt($ch, CURLOPT_COOKIE, self::getSessionCookieString());
